@@ -1,9 +1,9 @@
 #include <algorithm>
 #include "tokenize.h"
 
-enum class token_types{VAR, VAR_CREATE, FUNCTION_START, FUNCTION, FUNCTION_CALL, MATH, LOGIC, NUMBER};
+enum class token_types{VAR, VAR_CREATE, FUNCTION_START, FUNCTION, FUNCTION_CALL, MATH, LOGIC, NUMBER, END_SPECIAL_SCOPE, IF, WHILE};
 enum class math_tokens{PLUS, MINUS, BSL, BSR};
-enum class logic_tokens{ASSIGN, MORE, LESS, EQUAL};
+enum class logic_tokens{ASSIGN, MORE, LESS, EQUAL, LESS_EQ, MORE_EQ, NOT_EQ};
 
 void trim(std::string& param){
     while(param.starts_with(' '))
@@ -14,6 +14,69 @@ void trim(std::string& param){
         int a = 0 / 0;
 }
 
+bool setLogicToken(std::string param, std::vector<std::tuple<int, int>>& tokens){
+    trim(param);
+
+    if (param == "==") {
+        tokens.emplace_back((int) token_types::LOGIC, (int) logic_tokens::EQUAL);
+        return true;
+    }
+    if (param == ">=") {
+        tokens.emplace_back((int) token_types::LOGIC, (int) logic_tokens::MORE_EQ);
+        return true;
+    }
+    if (param == "<=") {
+        tokens.emplace_back((int) token_types::LOGIC, (int) logic_tokens::LESS_EQ);
+        return true;
+    }
+    if (param == "!=") {
+        tokens.emplace_back((int) token_types::LOGIC, (int) logic_tokens::NOT_EQ);
+        return true;
+    }
+    if (param == ">") {
+        tokens.emplace_back((int) token_types::LOGIC, (int) logic_tokens::MORE);
+        return true;
+    }
+    if (param == "<") {
+        tokens.emplace_back((int) token_types::LOGIC, (int) logic_tokens::LESS);
+        return true;
+    }
+    return false;
+}
+
+bool tokenizeNumVar(std::string param, std::vector<std::tuple<int, int>>& tokens, std::vector<std::tuple<std::string, int>>& var_keys){
+    if(std::ranges::all_of(param, [](char c){ return isdigit(c) != 0; })) {
+        tokens.emplace_back((int) token_types::NUMBER, std::stoi(param));
+        return true;
+    }
+    for(int i = 0; i < var_keys.size(); i++){
+        if(param == std::get<0>(var_keys[i])) {
+            tokens.emplace_back((int)token_types::VAR, i);
+            return true;
+        }
+    }
+    return false;
+}
+
+void setCondition(std::string& line, std::vector<std::tuple<int, int>>& tokens, std::vector<std::tuple<std::string, int>>& var_keys){
+    unsigned long pos = line.find(' ');
+    std::string var_1 = line.substr(0, pos);
+    line.erase(0, pos);
+    trim(line);
+    pos = line.find(' ');
+    std::string logic = line.substr(0, pos);
+    line.erase(0, pos);
+    trim(line);
+    pos = line.find(')');
+    std::string var_2 = line.substr(0, pos);
+    line.erase(0, pos);
+    if(!tokenizeNumVar(var_1, tokens, var_keys))
+        int ewrg = 0 / 0;
+    if(!setLogicToken(logic, tokens))
+        int ewrg = 0 / 0;
+    if(!tokenizeNumVar(var_2, tokens, var_keys))
+        int ewrg = 0 / 0;
+}
 
 void tokenizeVar(std::string& line, std::vector<std::tuple<int, int>>& tokens, std::vector<std::tuple<std::string, int>>& var_keys, int scope){
     line.erase(0, 4);
@@ -50,24 +113,17 @@ void tokenizeFnCall(std::string& line, std::vector<std::tuple<int, int>>& tokens
         std::string param = params_str.substr(0, params_str.find(','));
         params_str.erase(0, param.length() + 1);
         trim(param);
-        bool cont = false;
-        for(int i = 0; i < var_keys.size(); i++){
-            if(param == std::get<0>(var_keys[i])) {
-                tokens.emplace_back((int)token_types::VAR, i);
-                cont = true;
-                break;
-            }
-        }
-        if(!cont)
+        if(!tokenizeNumVar(param, tokens, var_keys))
             int wqef = 0 / 0;
     }
-}
+}//make it possible to call with numbers
 
 void tokenize(std::ifstream& file, std::vector<std::tuple<int, int>>& tokens){
     bool is_in_function = false;
     int scope_level = 0;
     std::vector<std::tuple<std::string, int>> var_keys;
     std::vector<std::tuple<std::string, int>> function_keys;
+    std::vector<bool> scope_type;
     std::string line;
 
     while(getline(file, line)){
@@ -103,47 +159,35 @@ void tokenize(std::ifstream& file, std::vector<std::tuple<int, int>>& tokens){
                     tokenizeVar(line, tokens, var_keys, scope_level);
                     continue;
                 }
-                else if(line.starts_with("+")){
-                    tokens.emplace_back((int)token_types::MATH, (int)math_tokens::PLUS);
-                    line.erase(0, 1);
-                    continue;
-                }
-                else if(line.starts_with('-')){
-                    tokens.emplace_back((int)token_types::MATH, (int)math_tokens::MINUS);
-                    line.erase(0, 1);
-                    continue;
-                }
-                else if(line.starts_with(">>")){
-                    tokens.emplace_back((int)token_types::MATH, (int)math_tokens::BSR);
-                    line.erase(0, 2);
-                    continue;
-                }
-                else if(line.starts_with("<<")){
-                    tokens.emplace_back((int)token_types::MATH, (int)math_tokens::BSL);
-                    line.erase(0, 2);
-                    continue;
-                }
-                else if(line.starts_with("==")){
-                    tokens.emplace_back((int)token_types::LOGIC, (int)logic_tokens::EQUAL);
-                    line.erase(0, 2);
-                    continue;
-                }
-                else if(line.starts_with('=')){
-                    tokens.emplace_back((int)token_types::LOGIC, (int)logic_tokens::ASSIGN);
-                    line.erase(0, 1);
-                    continue;
-                }
-                else if(line.starts_with('>')){
-                    tokens.emplace_back((int)token_types::LOGIC, (int)logic_tokens::MORE);
-                    line.erase(0, 1);
-                    continue;
-                }
-                else if(line.starts_with('<')){
-                    tokens.emplace_back((int)token_types::LOGIC, (int)logic_tokens::LESS);
-                    line.erase(0, 1);
-                    continue;
-                }
-                else if(line.starts_with('}')){
+                {
+                    if (line.starts_with("+")) {
+                        tokens.emplace_back((int) token_types::MATH, (int) math_tokens::PLUS);
+                        line.erase(0, 1);
+                        continue;
+                    }
+                    if (line.starts_with('-')) {
+                        tokens.emplace_back((int) token_types::MATH, (int) math_tokens::MINUS);
+                        line.erase(0, 1);
+                        continue;
+                    }
+                    if (line.starts_with(">>")) {
+                        tokens.emplace_back((int) token_types::MATH, (int) math_tokens::BSR);
+                        line.erase(0, 2);
+                        continue;
+                    }
+                    if (line.starts_with("<<")) {
+                        tokens.emplace_back((int) token_types::MATH, (int) math_tokens::BSL);
+                        line.erase(0, 2);
+                        continue;
+                    }
+                    if (line.starts_with('=')) {
+                        tokens.emplace_back((int) token_types::LOGIC, (int) logic_tokens::ASSIGN);
+                        line.erase(0, 1);
+                        continue;
+                    }
+
+                }//math and logic tokens
+                if(line.starts_with('}')){
                     scope_level--;
                     line.erase(0, 1);
                     if(scope_level == 0)
@@ -154,36 +198,58 @@ void tokenize(std::ifstream& file, std::vector<std::tuple<int, int>>& tokens){
                         else
                             break;
                     }
+                    if(scope_type[scope_level])
+                        tokens.emplace_back((int)token_types::END_SPECIAL_SCOPE, 0);
                     continue;
                 }
-                else if(line.starts_with('{')){
+                if(line.starts_with('{')){
                     scope_level++;
+                    scope_type.push_back(false);
                     line.erase(0, 1);
+                    continue;
+                }
+                if(line.starts_with("if ")){
+                    unsigned long pos = line.find('(');
+                    tokens.emplace_back((int)token_types::IF, 0);
+                    line.erase(0, pos + 1);
+                    trim(line);
+                    setCondition(line, tokens, var_keys);
+                    pos = line.find('{');
+                    scope_level++;
+                    line.erase(0, pos + 1);
+                    scope_type.push_back(true);
+                    continue;
+                }
+
+                if(line.starts_with("while ")){
+                    unsigned long pos = line.find('(');
+                    tokens.emplace_back((int)token_types::WHILE, 0);
+                    line.erase(0, pos + 1);
+                    trim(line);
+                    setCondition(line, tokens, var_keys);
+                    pos = line.find('{');
+                    scope_level++;
+                    line.erase(0, pos + 1);
+                    scope_type.push_back(true);
                     continue;
                 }
 
 
                 //non_reserved keywords (aka numbers and function names)
                 unsigned long pos = line.find(' ');
-                if(std::ranges::all_of(line.substr(0, pos), [](char c){ return isdigit(c) != 0; })) {
-                    tokens.emplace_back((int) token_types::NUMBER, std::stoi(line.substr(0, pos)));
-                    line.erase(0, pos);
+                std::string param = line.substr(0, pos);
+                trim(param);
+
+                if(tokenizeNumVar(param, tokens, var_keys)) {
+                    line.erase(0, param.size());
                     continue;
                 }
-                bool cont = false;
-                for(int i = 0; i < var_keys.size(); i++){
-                    if(line.substr(0, pos) == std::get<0>(var_keys[i])) {
-                        tokens.emplace_back((int)token_types::VAR, i);
-                        line.erase(0, pos);
-                        cont = true;
-                        break;
-                    }
-                }
-                if(cont)
-                    continue;
+
                 pos = line.find('(');
                 std::string fn_name = line.substr(0, pos);
                 trim(fn_name);
+
+                bool cont = false;
                 for(int i = 0; i < function_keys.size(); i++){
                     if(fn_name == std::get<0>(function_keys[i])) {
                         tokens.emplace_back((int)token_types::FUNCTION, i);
@@ -202,6 +268,7 @@ void tokenize(std::ifstream& file, std::vector<std::tuple<int, int>>& tokens){
                     is_in_function = true;
                     scope_level++;
                     tokenizeFn(line, tokens, function_keys, var_keys, scope_level);
+                    scope_type.push_back(true);
                     continue;
                 }
             }
