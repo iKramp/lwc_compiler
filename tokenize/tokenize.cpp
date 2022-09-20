@@ -212,6 +212,7 @@ void tokenize(std::ifstream& file, std::vector<std::tuple<int, int>>& tokens){
                     }
                     if(scope_type[scope_level])
                         tokens.emplace_back((int)token_types::END_SPECIAL_SCOPE, 0);
+                    scope_type.erase(scope_type.end());
                     continue;
                 }
                 if(line.starts_with('{')){
@@ -249,13 +250,7 @@ void tokenize(std::ifstream& file, std::vector<std::tuple<int, int>>& tokens){
                 if(line.starts_with("return ")){
                     line.erase(0, 6);
                     tokens.emplace_back((int)token_types::RETURN, 0);
-                    trim(line);
-                    unsigned long pos = line.find(' ');
-                    std::string param = line.substr(0, pos);
-                    trim(param);
-                    if(!tokenizeNumVar(param, tokens, var_keys))
-                        int rqf = 0 / 0;
-
+                    continue;
                 }
 
                 //non_reserved keywords (aka numbers and function names)

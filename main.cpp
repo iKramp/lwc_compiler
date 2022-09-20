@@ -1,5 +1,6 @@
 #include <iostream>
 #include "tokenize/tokenize.h"
+#include "parse/parse.h"
 #include <fstream>
 #include <vector>
 #include <tuple>
@@ -14,7 +15,7 @@ int main() {
     tokenize(input_file, tokens);
     input_file.close();
 
-
+    parse(tokens);
 
     //output_file.open("output.asm");
     //output_file.close();
