@@ -146,7 +146,10 @@ void tokenize(std::ifstream& file, std::vector<std::tuple<int, int>>& tokens){
                 unsigned long pos = line.find('(');
                 std::string temp = line.substr(0, pos);
                 trim(temp);
-                function_keys.emplace_back(temp, 0);
+                if(temp == "main")
+                    function_keys.emplace(function_keys.begin(), temp, 0);
+                else
+                    function_keys.emplace_back(temp, 0);
                 found = true;
                 continue;
             }

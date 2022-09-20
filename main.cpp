@@ -12,8 +12,10 @@ int main() {
 
     input_file.open("input.lwc");
     tokenize(input_file, tokens);
-
     input_file.close();
+
+
+
     //output_file.open("output.asm");
     //output_file.close();
 }
