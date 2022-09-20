@@ -1,7 +1,7 @@
 #include <algorithm>
 #include "tokenize.h"
 
-enum class token_types{VAR, VAR_CREATE, FUNCTION_START, FUNCTION, FUNCTION_CALL, MATH, LOGIC, NUMBER, END_SPECIAL_SCOPE, IF, WHILE};
+enum class token_types{VAR, VAR_CREATE, FUNCTION_START, FUNCTION, FUNCTION_CALL, MATH, LOGIC, NUMBER, END_SPECIAL_SCOPE, IF, WHILE, RETURN};
 enum class math_tokens{PLUS, MINUS, BSL, BSR};
 enum class logic_tokens{ASSIGN, MORE, LESS, EQUAL, LESS_EQ, MORE_EQ, NOT_EQ};
 
@@ -89,8 +89,17 @@ void tokenizeVar(std::string& line, std::vector<std::tuple<int, int>>& tokens, s
 void tokenizeFn(std::string& line, std::vector<std::tuple<int, int>>& tokens, std::vector<std::tuple<std::string, int>>& fn_keys, std::vector<std::tuple<std::string, int>>& var_keys, int scope){
     line.erase(0, 9);
     unsigned long pos = line.find('(');
+    std::string name = line.substr(0, pos);
+    trim(name);
+    int fn_index;
+    for(int i = 0; i < fn_keys.size(); i++){
+        if(std::get<0>(fn_keys[i]) == name){
+            fn_index = i;
+            break;
+        }
+    }
     line.erase(0, pos);
-    tokens.emplace_back((int)token_types::FUNCTION_START, fn_keys.size() - 1);
+    tokens.emplace_back((int)token_types::FUNCTION_START, fn_index);
     pos = line.find(')');
     std::string params_str = line.substr(1, pos - 1);
     line.erase(0, pos + 1);
@@ -100,7 +109,7 @@ void tokenizeFn(std::string& line, std::vector<std::tuple<int, int>>& tokens, st
         trim(param);
         var_keys.emplace_back(param, scope);
     }
-    std::get<1>(fn_keys[fn_keys.size() - 1]) = var_keys.size();
+    std::get<1>(fn_keys[fn_index]) = var_keys.size();
     pos = line.find('{');
     line.erase(0, pos + 1);
 }
@@ -234,6 +243,17 @@ void tokenize(std::ifstream& file, std::vector<std::tuple<int, int>>& tokens){
                     continue;
                 }
 
+                if(line.starts_with("return ")){
+                    line.erase(0, 6);
+                    tokens.emplace_back((int)token_types::RETURN, 0);
+                    trim(line);
+                    unsigned long pos = line.find(' ');
+                    std::string param = line.substr(0, pos);
+                    trim(param);
+                    if(!tokenizeNumVar(param, tokens, var_keys))
+                        int rqf = 0 / 0;
+
+                }
 
                 //non_reserved keywords (aka numbers and function names)
                 unsigned long pos = line.find(' ');
