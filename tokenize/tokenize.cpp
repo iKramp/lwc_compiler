@@ -271,7 +271,7 @@ void tokenize(std::ifstream& file, std::vector<std::tuple<int, int>>& tokens){
                 for(int i = 0; i < function_keys.size(); i++){
                     if(fn_name == std::get<0>(function_keys[i])) {
                         tokens.emplace_back((int)token_types::FUNCTION, i);
-                        line.erase(0, pos + 1);
+                        line.erase(0, pos);
                         tokenizeFnCall(line, tokens, var_keys);
                         tokens.emplace_back((int)token_types::FUNCTION_CALL, i);
                         cont = true;
