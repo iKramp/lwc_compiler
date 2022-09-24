@@ -1,9 +1,10 @@
 #include <algorithm>
 #include "tokenize.h"
 
-enum class token_types{VAR, VAR_CREATE, FUNCTION_START, FUNCTION, FUNCTION_CALL, MATH, LOGIC, NUMBER, END_SPECIAL_SCOPE, IF, WHILE, RETURN};
-enum class math_tokens{PLUS, MINUS, BSL, BSR};
-enum class logic_tokens{ASSIGN, MORE, LESS, EQUAL, LESS_EQ, MORE_EQ, NOT_EQ};
+
+enum class token_types{VAR, VAR_CREATE, FUNCTION_START, FUNCTION, FUNCTION_CALL, MATH, LOGIC, NUMBER, END_SPECIAL_SCOPE, IF, WHILE, RETURN, POP};
+enum class math_tokens{EMPTY, PLUS, MINUS, BSL, BSR, OR, XOR, AND, NOT};
+enum class logic_tokens{ASSIGN, NOT_EQ, LESS_EQ, LESS, MORE_EQ, MORE, EQUAL};
 
 void trim(std::string& param){
     while(param.starts_with(' '))
@@ -125,7 +126,7 @@ void tokenizeFnCall(std::string& line, std::vector<std::tuple<int, int>>& tokens
         if(!tokenizeNumVar(param, tokens, var_keys))
             int wqef = 0 / 0;
     }
-}//make it possible to call with numbers
+}
 
 void tokenize(std::ifstream& file, std::vector<std::tuple<int, int>>& tokens){
     bool is_in_function = false;
@@ -197,6 +198,22 @@ void tokenize(std::ifstream& file, std::vector<std::tuple<int, int>>& tokens){
                         line.erase(0, 1);
                         continue;
                     }
+                    if (line.starts_with('&')) {
+                        tokens.emplace_back((int) token_types::MATH, (int) math_tokens::AND);
+                        line.erase(0, 1);
+                        continue;
+                    }
+                    if (line.starts_with('|')) {
+                        tokens.emplace_back((int) token_types::MATH, (int) math_tokens::OR);
+                        line.erase(0, 1);
+                        continue;
+                    }
+                    if (line.starts_with('^')) {
+                        tokens.emplace_back((int) token_types::MATH, (int) math_tokens::XOR);
+                        line.erase(0, 1);
+                        continue;
+                    }
+
 
                 }//math and logic tokens
                 if(line.starts_with('}')){
@@ -205,8 +222,10 @@ void tokenize(std::ifstream& file, std::vector<std::tuple<int, int>>& tokens){
                     if(scope_level == 0)
                         is_in_function = false;
                     while(!var_keys.empty()){
-                        if(std::get<1>(var_keys[var_keys.size() - 1]) > scope_level)
+                        if(std::get<1>(var_keys[var_keys.size() - 1]) > scope_level) {
                             var_keys.erase(var_keys.end());
+                            tokens.emplace_back((int)token_types::POP, 0);
+                        }
                         else
                             break;
                     }

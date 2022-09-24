@@ -1,7 +1,7 @@
 #include <iostream>
 #include "tokenize/tokenize.h"
 #include "parse/parse.h"
-#include <fstream>
+#include "generate/generate.h"
 #include <vector>
 #include <tuple>
 
@@ -15,8 +15,11 @@ int main() {
     tokenize(input_file, tokens);
     input_file.close();
 
-    parse(tokens);
+    Node &root = parse(tokens);
 
-    //output_file.open("output.asm");
-    //output_file.close();
+    std::string asm_code = generate(root);
+
+    output_file.open("output.asm");
+    output_file << asm_code;
+    output_file.close();
 }
