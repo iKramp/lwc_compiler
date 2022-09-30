@@ -118,14 +118,14 @@ Node& parse(const std::vector<std::tuple<int, int>>& tokens){
     for(auto token : tokens){
         root->lower_nodes.emplace_back(new Node(token));
     }
-    for(int i = 0; i < root->lower_nodes.size(); i++){
+    /*for(int i = 0; i < root->lower_nodes.size(); i++){
         if(root->lower_nodes[i]->token[0] == (int)token_types::FUNCTION_START){
             fillBase(*root, i);
         }
     }
     for(auto node : root->lower_nodes){
         parseBase(*node);
-    }
+    }*/
     printTree(*root, 0);
     return *root;
 }

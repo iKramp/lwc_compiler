@@ -2,6 +2,7 @@
 #include "tokenize/tokenize.h"
 #include "parse/parse.h"
 #include "generate/generate.h"
+#include "createBinary/createBinary.h"
 #include <vector>
 #include <tuple>
 
@@ -12,14 +13,17 @@ int main() {
     std::vector<std::tuple<int, int>> tokens;
 
     input_file.open("input.lwc");
-    tokenize(input_file, tokens);
+    if(!tokenize(input_file, tokens)){
+        return 1;
+    }
     input_file.close();
 
     Node &root = parse(tokens);
 
-    std::string asm_code = generate(root);
+    /*std::string asm_code = generate(root);
+    createBinary();
 
     output_file.open("output.asm");
     output_file << asm_code;
-    output_file.close();
+    output_file.close();*/
 }

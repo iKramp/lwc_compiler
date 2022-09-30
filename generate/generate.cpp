@@ -23,7 +23,7 @@ void load_val(Node& base, std::string& asm_str, int addr){
     }else if(base.lower_nodes[addr - 1]->token[0] == (int)token_types::FUNCTION){
         gen_function(*base.lower_nodes[addr - 1], asm_str);
         asm_str += "GETSTACKPTR NOP NOP 4 //get stack_top\n";
-        asm_str += "IMM 5 num //returned val addr offset\n";
+        asm_str += "IMM 5 10 //returned val addr offset\n";
         asm_str += "ADD 4 5 6 //calc ret val addr\n";
         asm_str += "MEMR 6 0 " + std::to_string(addr) + " //load ret val to param " + std::to_string(addr) + "\n";
     }
