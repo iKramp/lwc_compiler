@@ -3,14 +3,6 @@
 #include <iostream>
 #include "fstream"
 
-enum class token_types{VAR, VAR_CREATE, FUNCTION_START, FUNCTION, FUNCTION_CALL, MATH, LOGIC, NUMBER, END_SPECIAL_SCOPE, IF, WHILE, RETURN, POP};
-enum class math_tokens{EMPTY, PLUS, MINUS, BSL, BSR, OR, XOR, AND, NOT};
-enum class logic_tokens{ASSIGN, NOT_EQ, LESS_EQ, LESS, MORE_EQ, MORE, EQUAL};
-
-const std::string token_type_names[13] = {"var", "var_create", "fn_start", "fn", "fn_call", "math", "logic", "number", "end_scope", "if", "while", "return", "pop"};
-const std::string math_type_names[8] = {"plus", "minus", "bsl", "bsr", "or", "and", "xor", "not"};
-const std::string logic_type_names[7] = {"assign", "more", "less", "equal", "less_eq", "more_eq", "not_eq"};
-
 
 void printTree(Node& base, int indent){
     static std::ofstream output_file;
@@ -24,6 +16,8 @@ void printTree(Node& base, int indent){
         line += math_type_names[base.token[1]];
     else if(base.token[0] == (int)token_types::LOGIC)
         line += logic_type_names[base.token[1]];
+    else if(base.token[0] == (int)token_types::SYMBOL)
+        line += symbol_type_names[base.token[1]];
     else
         line += std::to_string(base.token[1]);
     tree += line + "\n";
@@ -43,7 +37,7 @@ void fillBase(Node& base, int base_pos){
     while(true){
         if(base.lower_nodes[base_pos + 1]->token[0] == (int)token_types::IF || base.lower_nodes[base_pos + 1]->token[0] == (int)token_types::WHILE)
             fillBase(base, base_pos + 1);
-        if(base.lower_nodes[base_pos + 1]->token[0] == (int)token_types::END_SPECIAL_SCOPE) {
+        if(base.lower_nodes[base_pos + 1]->token[0] == (int)token_types::STRING) {//end special scope
             base.lower_nodes.erase(base.lower_nodes.begin() + base_pos + 1);
             break;
         }
@@ -63,11 +57,11 @@ void parseFnCall(Node& base, int fn_pos){
 
 void parseMath(Node& base, int pos){
     pos += 2;
-    if(base.lower_nodes[pos - 1]->token[0] == (int)token_types::FUNCTION)
+    if(base.lower_nodes[pos - 1]->token[0] == (int)token_types::STRING)//function
         parseFnCall(base, pos - 1);
 
     while(base.lower_nodes[pos]->token[0] == (int)token_types::MATH) {
-        if(base.lower_nodes[pos + 1]->token[0] == (int)token_types::FUNCTION)
+        if(base.lower_nodes[pos + 1]->token[0] == (int)token_types::STRING)//function
             parseFnCall(base, pos + 1);
 
         base.lower_nodes[pos]->lower_nodes.emplace_back(base.lower_nodes[pos - 1]);
@@ -99,7 +93,7 @@ void parseBase(Node& base){
                 continue;
             }
 
-        if(base.lower_nodes[i]->token[0] == (int)token_types::FUNCTION){
+        if(base.lower_nodes[i]->token[0] == (int)token_types::STRING){//function
             parseFnCall(base, i);
             continue;
         }
@@ -113,8 +107,8 @@ void parseBase(Node& base){
 }
 
 
-Node& parse(const std::vector<std::tuple<int, int>>& tokens){
-    auto root = new Node(std::tuple<int, int>(0, 0));
+Node& parse(const std::vector<std::tuple<token_types, int>>& tokens){
+    auto root = new Node(std::tuple<token_types, int>(token_types::VAR_CREATE, 0));
     for(auto token : tokens){
         root->lower_nodes.emplace_back(new Node(token));
     }

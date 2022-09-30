@@ -1,10 +1,6 @@
 #include "generate.h"
 
 
-enum class token_types{VAR, VAR_CREATE, FUNCTION_START, FUNCTION, FUNCTION_CALL, MATH, LOGIC, NUMBER, END_SPECIAL_SCOPE, IF, WHILE, RETURN, POP};
-enum class math_tokens{EMPTY, PLUS, MINUS, BSL, BSR, OR, XOR, AND, NOT};
-enum class logic_tokens{ASSIGN, NOT_EQ, LESS_EQ, LESS, MORE_EQ, MORE, EQUAL};
-
 int scope_num = 0;
 
 void load_math(Node& base, std::string& asm_str);
@@ -20,7 +16,7 @@ void load_val(Node& base, std::string& asm_str, int addr){
     }else if(base.lower_nodes[addr - 1]->token[0] == (int)token_types::MATH){
         load_math(*base.lower_nodes[addr - 1], asm_str);
         asm_str += "MOV 3 NOP " + std::to_string(addr) + " //mov res to param " + std::to_string(addr) + "\n";
-    }else if(base.lower_nodes[addr - 1]->token[0] == (int)token_types::FUNCTION){
+    }else if(base.lower_nodes[addr - 1]->token[0] == (int)token_types::STRING){//function
         gen_function(*base.lower_nodes[addr - 1], asm_str);
         asm_str += "GETSTACKPTR NOP NOP 4 //get stack_top\n";
         asm_str += "IMM 5 10 //returned val addr offset\n";
@@ -120,7 +116,7 @@ void gen_while(Node& token, std::string& asm_str){
 void gen_base(Node& base, std::string& asm_str){
     for(auto token : base.lower_nodes){
 
-        if(token->token[0] == (int)token_types::FUNCTION){
+        if(token->token[0] == (int)token_types::STRING){//function
             gen_function(*token, asm_str);
         }
 
@@ -132,7 +128,7 @@ void gen_base(Node& base, std::string& asm_str){
                 asm_str += "IMM 2 " + std::to_string(token->lower_nodes[1]->token[1]) + " //imm num to param 2\n";
             }else if(token->lower_nodes[1]->token[0] == (int)token_types::MATH)
                 load_val(*token, asm_str, 2);
-            else if(token->lower_nodes[1]->token[0] == (int)token_types::FUNCTION){
+            else if(token->lower_nodes[1]->token[0] == (int)token_types::STRING){//function
                 gen_function(*token->lower_nodes[1], asm_str);
                 asm_str += "GETSTACKPTR NOP NOP 4 //get stack_top\n";
                 asm_str += "IMM 5 num //returned val addr offset\n";
@@ -164,7 +160,7 @@ void gen_base(Node& base, std::string& asm_str){
                 asm_str += "IMM 2 " + std::to_string(token->lower_nodes[0]->token[1]) + " //imm num to param 2\n";
             }else if(token->lower_nodes[0]->token[0] == (int)token_types::MATH)
                 load_val(*token, asm_str, 2);
-            else if(token->lower_nodes[0]->token[0] == (int)token_types::FUNCTION){
+            else if(token->lower_nodes[0]->token[0] == (int)token_types::STRING){//function
                 gen_function(*token->lower_nodes[0], asm_str);
                 asm_str += "GETSTACKPTR NOP NOP 4 //get stack_top\n";
                 asm_str += "IMM 5 num //returned val addr offset\n";

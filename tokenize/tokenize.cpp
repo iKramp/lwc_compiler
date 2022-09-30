@@ -4,10 +4,6 @@
 #include <stdexcept>
 
 
-enum class token_types{VAR_CREATE, FUNCTION_DEF, RETURN, IF, WHILE, VAR, FUNCTION_CALL, MATH, LOGIC, NUMBER, POP, SYMBOL, STRING};
-enum class math_tokens{EMPTY, PLUS, MINUS, BSL, BSR, OR, XOR, AND, NOT};
-enum class logic_tokens{ASSIGN, NOT_EQ, LESS_EQ, LESS, MORE_EQ, MORE, EQUAL};
-enum class symbol_tokens{BRACKET_L, BRACKET_R, SCOPE_BRACKET_L, SCOPE_BRACKET_R};
 std::vector<std::string> reserved_keywords = {"var", "func", "return", "if", "while"};
 std::vector<std::string> reserved_symbols = {"+", "-", "<<", ">>", "|", "^", "&", "!", "=", "!=", "<=", "<", ">=", ">", "==", "(", ")", "{", "}", " "};
 
@@ -18,7 +14,7 @@ void trim(std::string& param){
         param.erase(param.end() - 1, param.end());
 }
 
-void read_file(std::ifstream& file, std::string& file_str){
+void readFile(std::ifstream& file, std::string& file_str){
     bool in_comment = false;
     unsigned long comment_start = 0;
     std::string line;
@@ -51,16 +47,16 @@ void read_file(std::ifstream& file, std::string& file_str){
     }
 }
 
-void tokenize_symbol(int id, std::vector<std::tuple<int, int>>& tokens){
+void tokenizeSymbol(int id, std::vector<std::tuple<token_types, int>>& tokens){
     if(id < 8)
-        tokens.emplace_back((int)token_types::MATH, id);
+        tokens.emplace_back(token_types::MATH, id + 1);
     else if(id < 15)
-        tokens.emplace_back((int)token_types::LOGIC, id - 8);
+        tokens.emplace_back(token_types::LOGIC, id - 8);
     else if(id < 19)
-        tokens.emplace_back((int)token_types::SYMBOL, id - 15);
+        tokens.emplace_back(token_types::SYMBOL, id - 15);
 }
 
-void split_tokens(std::string& file_str, std::vector<std::string>& string_keys, std::vector<std::tuple<int, int>>& tokens){
+void splitTokens(std::string& file_str, std::vector<std::string>& string_keys, std::vector<std::tuple<token_types, int>>& tokens){
     while(!file_str.empty()){
         trim(file_str);
         unsigned long pos = std::string::npos;
@@ -73,18 +69,18 @@ void split_tokens(std::string& file_str, std::vector<std::string>& string_keys, 
             }
         }
         if(pos == 0){
-            tokenize_symbol(symbol_id, tokens);
+            tokenizeSymbol(symbol_id, tokens);
             file_str.erase(0, reserved_symbols[symbol_id].length());
         }else{
             std::string keyword = file_str.substr(0, pos);
             for(int i = 0; i < reserved_keywords.size(); i++){
                 if(keyword == reserved_keywords[i]){
-                    tokens.emplace_back(i, 0);
+                    tokens.emplace_back((token_types)i, 0);
                     file_str.erase(0, reserved_keywords[i].length());
                     goto cont;
                 }
             }
-            tokens.emplace_back((int)token_types::STRING, string_keys.size());
+            tokens.emplace_back(token_types::STRING, string_keys.size());
             string_keys.emplace_back(keyword);
             file_str.erase(0, keyword.size());
             cont:;
@@ -92,14 +88,27 @@ void split_tokens(std::string& file_str, std::vector<std::string>& string_keys, 
     }
 }
 
-bool tokenizeNumVar(std::string param, std::vector<std::tuple<int, int>>& tokens, std::vector<std::tuple<std::string, int>>& var_keys){
+void getFunctions(std::vector<std::tuple<token_types, int>>& tokens, std::vector<std::string>& string_keys, std::vector<std::tuple<std::string, int>> function_keys){
+    for(int i = 0; i < tokens.size(); i++){
+        if(std::get<0>(tokens[i]) == token_types::FUNCTION_DEF){
+            if(std::get<0>(tokens[i + 1]) != token_types::STRING){
+                throw "name expected after function declaration";
+            }
+            std::get<1>(tokens[i]) = function_keys.size();
+            function_keys.emplace_back(string_keys[std::get<1>(tokens[i + 1])], 0);
+            tokens.erase(tokens.begin() + i + 1, tokens.begin() + i + 2);
+        }
+    }
+}
+
+bool tokenizeNumVar(std::string param, std::vector<std::tuple<token_types, int>>& tokens, std::vector<std::tuple<std::string, int>>& var_keys){
     if(std::ranges::all_of(param, [](char c){ return isdigit(c) != 0; })) {
-        tokens.emplace_back((int) token_types::NUMBER, std::stoi(param));
+        tokens.emplace_back(token_types::NUMBER, std::stoi(param));
         return true;
     }
     for(int i = 0; i < var_keys.size(); i++){
         if(param == std::get<0>(var_keys[i])) {
-            tokens.emplace_back((int)token_types::VAR, i);
+            tokens.emplace_back(token_types::VAR, i);
             return true;
         }
     }
@@ -150,15 +159,16 @@ bool tokenizeNumVar(std::string param, std::vector<std::tuple<int, int>>& tokens
         return true;
 }*/
 
-bool tokenize(std::ifstream& file, std::vector<std::tuple<int, int>>& tokens){
+void tokenize(std::ifstream& file, std::vector<std::tuple<token_types, int>>& tokens){
     std::vector<std::string> string_keys;
     std::vector<std::tuple<std::string, int>> var_keys;
     std::vector<std::tuple<std::string, int>> function_keys;
     std::string file_str;
 
-    read_file(file, file_str);
-    std::cout << file_str << std::endl;
-    split_tokens(file_str, string_keys, tokens);
+    readFile(file, file_str);
+    splitTokens(file_str, string_keys, tokens);
 
-    return true;
+    //get numbers
+    getFunctions(tokens, string_keys, function_keys);
+    //set vars and functions
 }
