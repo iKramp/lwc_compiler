@@ -136,7 +136,12 @@ void processVarCreate(std::vector<std::tuple<token_types, int>>& tokens, std::ve
     if(std::get<0>(tokens[pos + 1]) != token_types::STRING)
         throw "name expected after function declaration";
     std::get<1>(tokens[pos]) = var_keys.size();
-    var_keys.emplace_back(string_keys[std::get<1>(tokens[pos + 1])], scope);
+    std::string& var = string_keys[std::get<1>(tokens[pos + 1])];
+    for(auto& name : var_keys){
+        if(std::get<0>(name) == var)
+            throw "duplicate var name: " + var;
+    }
+    var_keys.emplace_back(var, scope);
     tokens.erase(tokens.begin() + pos + 1, tokens.begin() + pos + 2);
 }
 
@@ -189,49 +194,6 @@ void processStrings(std::vector<std::tuple<token_types, int>>& tokens, std::vect
         }
     }
 }
-
-/*bool preprocess(std::vector<std::tuple<std::string, int>>& function_keys, std::string& file_str){
-    bool found = true, main = false;
-    unsigned long prev_pos = 0;
-    while(found) {
-        found = false;
-        unsigned long fn;
-        fn = file_str.find("func ", prev_pos);
-        if(fn != std::string::npos){
-            unsigned long pos = file_str.find('(', fn);
-            std::string temp = file_str.substr(fn + 5, pos - fn - 5);
-            prev_pos = pos;
-            trim(temp);
-            unsigned long space = temp.find(' ', fn + 5);
-            //filter double functions
-
-            if(space != std::string::npos) {
-                std::cout << "( expected after function name: " + temp.substr(0, space);
-                return false;
-            }
-            if(temp.empty()) {
-                std::cout << "empty function name";
-                return false;
-            }
-
-
-            if(temp == "main") {
-                function_keys.emplace(function_keys.begin(), temp, 0);
-                main = true;
-            }
-            else
-                function_keys.emplace_back(temp, 0);
-            found = true;
-            continue;
-        }
-    }
-    if(!main) {
-        std::cout << "no main function in this program";
-        return false;
-    }
-    else
-        return true;
-}*/
 
 void tokenize(std::ifstream& file, std::vector<std::tuple<token_types, int>>& tokens){
     std::vector<std::string> string_keys;
