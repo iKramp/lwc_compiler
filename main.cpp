@@ -26,6 +26,10 @@ int main() {
         std::cout << e;
         return 1;
     }
+    catch (std::string e){
+        std::cout << e;
+        return 1;
+    }
     /*
     output_file.open("output.asm");
     output_file << asm_code;
