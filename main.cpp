@@ -26,7 +26,7 @@ int main() {
         std::cout << e;
         return 1;
     }
-    catch (std::string e){
+    catch (std::string& e){
         std::cout << e;
         return 1;
     }

@@ -4,7 +4,7 @@
 
 
 std::vector<std::string> reserved_keywords = {"var", "func", "return", "if", "while"};
-std::vector<std::string> reserved_symbols = {"+", "-", "<<", ">>", "|", "^", "&", "!", "=", "!=", "<=", "<", ">=", ">", "==", "(", ")", "{", "}", " "};
+std::vector<std::string> reserved_symbols = {"+", "-", "<<", ">>", "|", "^", "&", "!", "=", "!=", "<=", "<", ">=", ">", "==", "(", ")", "{", "}", ",", " "};
 
 void trim(std::string& param){
     while(param.starts_with(' '))
@@ -105,26 +105,28 @@ void convertNumbers(std::vector<std::tuple<token_types, int>>& tokens, std::vect
     }
 }
 
-void getFunctions(std::vector<std::tuple<token_types, int>>& tokens, std::vector<std::string>& string_keys, std::vector<std::tuple<std::string, int>>& function_keys){
+void tokenizeFunc(std::vector<std::tuple<token_types, int>>& tokens, std::vector<std::string>& string_keys, std::vector<std::tuple<std::string, int>>& var_keys, std::vector<std::tuple<std::string, int>>& function_keys, int i, bool& main){
+    if(std::get<0>(tokens[i + 1]) != token_types::STRING)
+        throw "name expected after function declaration";
+    if(string_keys[std::get<1>(tokens[i + 1])] == "main"){
+        if(std::get<0>(function_keys[0]) == "main")
+            throw "double function definition of: main";
+        std::get<1>(tokens[i]) = 0;
+        std::get<0>(function_keys[0]) = "main";
+        main = true;
+    }else{
+        std::get<1>(tokens[i]) = function_keys.size();
+        function_keys.emplace_back(string_keys[std::get<1>(tokens[i + 1])], 0);
+    }
+    tokens.erase(tokens.begin() + i + 1, tokens.begin() + i + 2);
+}
+
+void getFunctions(std::vector<std::tuple<token_types, int>>& tokens, std::vector<std::string>& string_keys, std::vector<std::tuple<std::string, int>>& var_keys, std::vector<std::tuple<std::string, int>>& function_keys){
     bool main = false;
     function_keys.emplace_back("0", 0);
     for(int i = 0; i < tokens.size(); i++){
         if(std::get<0>(tokens[i]) == token_types::FUNCTION_DEF){
-            if(std::get<0>(tokens[i + 1]) != token_types::STRING){
-                throw "name expected after function declaration";
-            }
-            if(string_keys[std::get<1>(tokens[i + 1])] == "main"){
-                if(std::get<0>(function_keys[0]) == "main")
-                    throw "double function definition of: main";
-                std::get<1>(tokens[i]) = 0;
-                std::get<0>(function_keys[0]) = "main";
-                main = true;
-            }else{
-                std::get<1>(tokens[i]) = function_keys.size();
-                function_keys.emplace_back(string_keys[std::get<1>(tokens[i + 1])], 0);
-            }
-
-            tokens.erase(tokens.begin() + i + 1, tokens.begin() + i + 2);
+            tokenizeFunc(tokens, string_keys, var_keys, function_keys, i, main);
         }
     }
     for(int i = 0; i < function_keys.size(); i++){
@@ -139,7 +141,7 @@ void getFunctions(std::vector<std::tuple<token_types, int>>& tokens, std::vector
 
 void processVarCreate(std::vector<std::tuple<token_types, int>>& tokens, std::vector<std::string>& string_keys, std::vector<std::tuple<std::string, int>>& var_keys, int pos, int scope){
     if(std::get<0>(tokens[pos + 1]) != token_types::STRING)
-        throw "name expected after function declaration";
+        throw "name expected after variable declaration";
     std::get<1>(tokens[pos]) = var_keys.size();
     std::string& var = string_keys[std::get<1>(tokens[pos + 1])];
     for(auto& name : var_keys){
@@ -180,6 +182,31 @@ void cleanScopeVars(std::vector<std::tuple<std::string, int>>& var_keys, int sco
     }
 }
 
+void listParams(std::vector<std::tuple<token_types, int>>& tokens, std::vector<std::string>& string_keys, std::vector<std::tuple<std::string, int>>& var_keys, int j){
+    if(std::get<0>(tokens[j]) == token_types::SYMBOL && std::get<1>(tokens[j]) == (int)symbol_tokens::BRACKET_L){
+        j++;
+        while(!(std::get<0>(tokens[j]) == token_types::SYMBOL && std::get<1>(tokens[j]) == (int)symbol_tokens::BRACKET_R)){
+            if(std::get<0>(tokens[j]) != token_types::STRING)
+                throw "expected parameter name after ( or ,";
+            //std::get<1>(tokens[j]) = var_keys.size();
+            std::string& param = string_keys[std::get<1>(tokens[j])];
+            for(auto& name : var_keys){
+                if(std::get<0>(name) == param)
+                    throw "duplicate var name: " + param;
+            }
+            var_keys.emplace_back(param, 1);
+            tokens.erase(tokens.begin() + j, tokens.begin() + j + 1);
+            if(std::get<0>(tokens[j]) == token_types::SYMBOL && std::get<1>(tokens[j]) == (int)symbol_tokens::BRACKET_R)
+                continue;
+            if(!(std::get<0>(tokens[j]) == token_types::SYMBOL && std::get<1>(tokens[j]) == (int)symbol_tokens::COMMA))
+                throw ", or ) expected after parameter declaration";
+            tokens.erase(tokens.begin() + j, tokens.begin() + j + 1);
+        }
+    }else{
+        throw "( expected after name in function definition";
+    }
+}
+
 void processStrings(std::vector<std::tuple<token_types, int>>& tokens, std::vector<std::string>& string_keys, std::vector<std::tuple<std::string, int>>& var_keys, std::vector<std::tuple<std::string, int>>& function_keys){
     int scope = 0;
     for(int i = 0; i < tokens.size(); i++){
@@ -188,15 +215,15 @@ void processStrings(std::vector<std::tuple<token_types, int>>& tokens, std::vect
         else if(std::get<0>(tokens[i]) == token_types::SYMBOL && std::get<1>(tokens[i]) == (int)symbol_tokens::SCOPE_BRACKET_R) {
             scope--;
             cleanScopeVars(var_keys, scope);
-        }
-        else if(std::get<0>(tokens[i]) == token_types::VAR_CREATE)
+        }else if(std::get<0>(tokens[i]) == token_types::VAR_CREATE)
             processVarCreate(tokens, string_keys, var_keys, i, scope);
         else if(std::get<0>(tokens[i]) == token_types::STRING) {
             if(std::get<0>(tokens[i + 1]) == token_types::SYMBOL && std::get<1>(tokens[i + 1]) == (int)symbol_tokens::BRACKET_L)
                 processFuncCall(tokens, string_keys, function_keys, i);
             else
                 processVar(tokens, string_keys, var_keys, i);
-        }
+        }else if(std::get<0>(tokens[i]) == token_types::FUNCTION_DEF)
+            listParams(tokens, string_keys, var_keys, i + 1);
     }
 }
 
@@ -210,6 +237,6 @@ void tokenize(std::ifstream& file, std::vector<std::tuple<token_types, int>>& to
     splitTokens(file_str, string_keys, tokens);
 
     convertNumbers(tokens, string_keys);
-    getFunctions(tokens, string_keys, function_keys);
+    getFunctions(tokens, string_keys, var_keys, function_keys);
     processStrings(tokens, string_keys, var_keys, function_keys);
 }
