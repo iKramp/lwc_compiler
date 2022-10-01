@@ -9,18 +9,21 @@ void printTree(Node& base, int indent){
     static std::string tree = "";
 
     std::string line;
-    for(int i = 0; i < indent; i++)
+    for(int i = 0; i < indent - 1; i++)
         line += "   ";
-    line += token_type_names[base.token[0]] + " ";
-    if(base.token[0] == (int)token_types::MATH)
-        line += math_type_names[base.token[1]];
-    else if(base.token[0] == (int)token_types::LOGIC)
-        line += logic_type_names[base.token[1]];
-    else if(base.token[0] == (int)token_types::SYMBOL)
-        line += symbol_type_names[base.token[1]];
-    else
-        line += std::to_string(base.token[1]);
-    tree += line + "\n";
+    if(indent > 0) {
+        line += token_type_names[base.token[0]] + " ";
+        if (base.token[0] == (int) token_types::MATH)
+            line += math_type_names[base.token[1]];
+        else if (base.token[0] == (int) token_types::LOGIC)
+            line += logic_type_names[base.token[1]];
+        else if (base.token[0] == (int) token_types::SYMBOL)
+            line += symbol_type_names[base.token[1]];
+        else
+            line += std::to_string(base.token[1]);
+
+        tree += line + "\n";
+    }
     for(auto node : base.lower_nodes)
         printTree(*node, indent + 1);
 

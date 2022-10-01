@@ -106,25 +106,31 @@ void convertNumbers(std::vector<std::tuple<token_types, int>>& tokens, std::vect
 }
 
 void getFunctions(std::vector<std::tuple<token_types, int>>& tokens, std::vector<std::string>& string_keys, std::vector<std::tuple<std::string, int>>& function_keys){
+    bool main = false;
+    function_keys.emplace_back("0", 0);
     for(int i = 0; i < tokens.size(); i++){
         if(std::get<0>(tokens[i]) == token_types::FUNCTION_DEF){
             if(std::get<0>(tokens[i + 1]) != token_types::STRING){
                 throw "name expected after function declaration";
             }
-            std::get<1>(tokens[i]) = function_keys.size();
-            function_keys.emplace_back(string_keys[std::get<1>(tokens[i + 1])], 0);
+            if(string_keys[std::get<1>(tokens[i + 1])] == "main"){
+                if(std::get<0>(function_keys[0]) == "main")
+                    throw "double function definition of: main";
+                std::get<1>(tokens[i]) = 0;
+                std::get<0>(function_keys[0]) = "main";
+                main = true;
+            }else{
+                std::get<1>(tokens[i]) = function_keys.size();
+                function_keys.emplace_back(string_keys[std::get<1>(tokens[i + 1])], 0);
+            }
+
             tokens.erase(tokens.begin() + i + 1, tokens.begin() + i + 2);
         }
     }
-    bool main = false;
     for(int i = 0; i < function_keys.size(); i++){
         for(int j = i + 1; j < function_keys.size(); j++){
             if(std::get<0>(function_keys[i]) == std::get<0>(function_keys[j]))
                 throw "double function definition of: " + std::get<0>(function_keys[i]);
-        }
-        if(std::get<0>(function_keys[i]) == "main") {
-            std::swap(function_keys[i], function_keys[0]);
-            main = true;
         }
     }
     if(!main)
