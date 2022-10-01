@@ -1,6 +1,5 @@
 #include <algorithm>
 #include "tokenize.h"
-#include <iostream>
 #include <stdexcept>
 
 
@@ -207,5 +206,4 @@ void tokenize(std::ifstream& file, std::vector<std::tuple<token_types, int>>& to
     convertNumbers(tokens, string_keys);
     getFunctions(tokens, string_keys, function_keys);
     processStrings(tokens, string_keys, var_keys, function_keys);
-    //set vars and functions
 }
