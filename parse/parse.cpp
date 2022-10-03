@@ -34,9 +34,56 @@ void printTree(Node& base, int indent){
     }
 }
 
-void parseFunction(Node& base, int pos){
+void groupBracket(Node& base, int pos){
+    bool scope = base.lower_nodes[pos]->token[1] == (int)symbol_tokens::SCOPE_BRACKET_L;
+    pos++;
+    while(true){
+        if(base.lower_nodes[pos]->token[0] == (int)token_types::SYMBOL && base.lower_nodes[pos]->token[1] == (int)symbol_tokens::BRACKET_R && !scope)
+            break;
+        if(base.lower_nodes[pos]->token[0] == (int)token_types::SYMBOL && base.lower_nodes[pos]->token[1] == (int)symbol_tokens::SCOPE_BRACKET_R && scope)
+            break;
+        if(base.lower_nodes[pos]->token[0] == (int)token_types::SYMBOL &&
+           (base.lower_nodes[pos]->token[1] == (int)symbol_tokens::SCOPE_BRACKET_L ||
+            base.lower_nodes[pos]->token[1] == (int)symbol_tokens::BRACKET_L)){
+            groupBracket(base, pos);
+        }
+        base.lower_nodes[pos - 1]->lower_nodes.emplace_back(base.lower_nodes[pos]);
+        base.lower_nodes.erase(base.lower_nodes.begin() + pos, base.lower_nodes.begin() + pos + 1);
+    }
+    base.lower_nodes.erase(base.lower_nodes.begin() + pos, base.lower_nodes.begin() + pos + 1);
+}
 
-};
+void groupBrackets(Node& base){
+    for(int i = 0; i < base.lower_nodes.size(); i++){
+        if(base.lower_nodes[i]->token[0] == (int)token_types::SYMBOL &&
+        (base.lower_nodes[i]->token[1] == (int)symbol_tokens::SCOPE_BRACKET_L ||
+        base.lower_nodes[i]->token[1] == (int)symbol_tokens::BRACKET_L)){
+            groupBracket(base, i);
+        }
+    }
+}
+
+void parseFunction(Node& base, int pos){
+    pos++;
+    if(base.lower_nodes[pos]->token[0] != (int)token_types::SYMBOL || base.lower_nodes[pos]->token[1] != (int)symbol_tokens::SCOPE_BRACKET_L)
+        throw "{ expected after ) in function definition";
+    base.lower_nodes.erase(base.lower_nodes.begin() + pos, base.lower_nodes.begin() + pos + 1);
+    int scope_depth = 1;
+    while(true){
+        if(base.lower_nodes[pos]->token[0] == (int)token_types::SYMBOL && base.lower_nodes[pos]->token[1] == (int)symbol_tokens::SCOPE_BRACKET_L)
+            scope_depth++;
+        if(base.lower_nodes[pos]->token[0] == (int)token_types::SYMBOL && base.lower_nodes[pos]->token[1] == (int)symbol_tokens::SCOPE_BRACKET_R) {
+            scope_depth--;
+            if(!scope_depth) {
+                base.lower_nodes.erase(base.lower_nodes.begin() + pos, base.lower_nodes.begin() + pos + 1);
+                break;
+            }
+        }
+        base.lower_nodes[pos - 1]->lower_nodes.emplace_back(base.lower_nodes[pos]);
+        base.lower_nodes.erase(base.lower_nodes.begin() + pos, base.lower_nodes.begin() + pos + 1);
+    }
+    groupBrackets(*base.lower_nodes[pos - 1]);
+}
 
 Node& parse(const std::vector<std::tuple<token_types, int>>& tokens){
     auto root = new Node(std::tuple<token_types, int>(token_types::VAR_CREATE, 0));
@@ -47,7 +94,7 @@ Node& parse(const std::vector<std::tuple<token_types, int>>& tokens){
         if(root->lower_nodes[i]->token[0] == (int)token_types::FUNCTION_DEF){
             parseFunction(*root, i);
         }else{
-            //throw "code cannot be written outside of functions";
+            throw "code cannot be written outside of functions";
         }
     }/*
     for(auto node : root->lower_nodes){

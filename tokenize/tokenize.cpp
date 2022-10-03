@@ -184,11 +184,10 @@ void cleanScopeVars(std::vector<std::tuple<std::string, int>>& var_keys, int sco
 
 void listParams(std::vector<std::tuple<token_types, int>>& tokens, std::vector<std::string>& string_keys, std::vector<std::tuple<std::string, int>>& var_keys, int j){
     if(std::get<0>(tokens[j]) == token_types::SYMBOL && std::get<1>(tokens[j]) == (int)symbol_tokens::BRACKET_L){
-        j++;
+        tokens.erase(tokens.begin() + j, tokens.begin() + j + 1);
         while(!(std::get<0>(tokens[j]) == token_types::SYMBOL && std::get<1>(tokens[j]) == (int)symbol_tokens::BRACKET_R)){
             if(std::get<0>(tokens[j]) != token_types::STRING)
                 throw "expected parameter name after ( or ,";
-            //std::get<1>(tokens[j]) = var_keys.size();
             std::string& param = string_keys[std::get<1>(tokens[j])];
             for(auto& name : var_keys){
                 if(std::get<0>(name) == param)
@@ -202,6 +201,7 @@ void listParams(std::vector<std::tuple<token_types, int>>& tokens, std::vector<s
                 throw ", or ) expected after parameter declaration";
             tokens.erase(tokens.begin() + j, tokens.begin() + j + 1);
         }
+        tokens.erase(tokens.begin() + j, tokens.begin() + j + 1);
     }else{
         throw "( expected after name in function definition";
     }
