@@ -62,7 +62,12 @@ void splitTokens(std::string& file_str, std::vector<std::string>& string_keys, s
         int symbol_id = 0;
         for(int i = 0; i < reserved_symbols.size(); i++){
             unsigned long temp = file_str.find(reserved_symbols[i]);
+            if(temp == std::string::npos)
+                continue;
             if(temp < pos) {
+                pos = temp;
+                symbol_id = i;
+            }else if(file_str.substr(temp, 2) == "==" && temp == pos){
                 pos = temp;
                 symbol_id = i;
             }
