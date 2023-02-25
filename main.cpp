@@ -22,7 +22,7 @@ int main() {
     output_file.open("output.asm");
     output_file << asm_code;
     output_file.close();
-    //createBinary();
+    createBinary();
   }
   catch (char const* e){
     std::cout << e;

@@ -19,7 +19,7 @@ void readFile(std::ifstream& file, std::string& file_str){
   std::string line;
   while(getline(file, line)) {
     while(!line.empty()) {
-      unsigned long pos = line.find("//");//remove comments
+      unsigned long long pos = line.find("//");//remove comments
       if (pos != std::string::npos)
         line.erase(pos, line.size() - pos);
       if (in_comment) {
@@ -61,7 +61,7 @@ void splitTokens(std::string& file_str, std::vector<std::string>& string_keys, s
     unsigned long pos = std::string::npos;
     int symbol_id = 0;
     for(int i = 0; i < reserved_symbols.size(); i++){
-      unsigned long temp = file_str.find(reserved_symbols[i]);
+      unsigned long long temp = file_str.find(reserved_symbols[i]);
       if(temp == std::string::npos)
         continue;
       if(temp < pos) {
