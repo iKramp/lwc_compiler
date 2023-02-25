@@ -10,3 +10,7 @@ struct Node{
 };
 
 Node& parse(const std::vector<std::tuple<token_types, int>>& tokens);
+bool isToken(Node& node, math_tokens token);
+bool isToken(Node& node, logic_tokens token);
+bool isToken(Node& node, symbol_tokens token);
+bool isToken(Node& node, token_types token);

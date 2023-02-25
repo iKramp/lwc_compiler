@@ -8,30 +8,28 @@
 
 
 int main() {
-    std::ifstream input_file;
-    std::ofstream output_file;
-    std::vector<std::tuple<token_types, int>> tokens;
+  std::ifstream input_file;
+  std::ofstream output_file;
+  std::vector<std::tuple<token_types, int>> tokens;
+  try {
+    input_file.open("input.lwc");
+    tokenize(input_file, tokens);
+    input_file.close();
 
-    try {
-        input_file.open("input.lwc");
-        tokenize(input_file, tokens);
-        input_file.close();
+    Node &root = parse(tokens);
 
-        Node &root = parse(tokens);
-
-        /*std::string asm_code = generate(root);
-        createBinary();*/
-    }
-    catch (char const* e){
-        std::cout << e;
-        return 1;
-    }
-    catch (std::string& e){
-        std::cout << e;
-        return 1;
-    }
-    /*
+    std::string asm_code = generate(root);
     output_file.open("output.asm");
     output_file << asm_code;
-    output_file.close();*/
+    output_file.close();
+    //createBinary();
+  }
+  catch (char const* e){
+    std::cout << e;
+    return 1;
+  }
+  catch (std::string& e){
+    std::cout << e;
+    return 1;
+  }
 }
